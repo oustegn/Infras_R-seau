@@ -1,0 +1,55 @@
+#configuration du tunnel gre sur rout1
+ip netns exec rout1 ip link add eoip1 type gretap remote 172.16.2.253 local 172.16.1.253 nopmtudisc
+ip netns exec rout1 ip link set dev eoip1 up
+ip netns exec rout1 brctl addbr tunelgre
+ip netns exec rout1 brctl addif tunelgre eoip1
+ip netns exec rout1 brctl addif tunelgre rout1-eth1
+ip netns exec rout1 ip link set tunelgre up
+ip netns exec rout1 ip link add link tunelgre name tunelgre.100 type vlan id 100
+ip netns exec rout1 ip link set tunelgre.100 up
+ip netns exec rout1 ip link add link tunelgre name tunelgre.200 type vlan id 200
+ip netns exec rout1 ip link set tunelgre.200 up
+ip netns exec rout1 ip addr add 192.168.100.254/24 dev tunelgre.100
+ip netns exec rout1 ip addr add 192.168.200.254/24 dev tunelgre.200
+
+#configuration du tunnel gre sur rout2
+ip netns exec rout2 ip link add eoip1 type gretap remote 172.16.1.253 local 172.16.2.253 nopmtudisc
+ip netns exec rout2 ip link set dev eoip1 up
+ip netns exec rout2 brctl addbr tunelgre
+ip netns exec rout2 brctl addif tunelgre eoip1
+ip netns exec rout2 brctl addif tunelgre rout2-eth1
+ip netns exec rout2 ip link set tunelgre up
+ip netns exec rout2 ip link add link tunelgre name tunelgre.100 type vlan id 100
+ip netns exec rout2 ip link set tunelgre.100 up
+ip netns exec rout2 ip link add link tunelgre name tunelgre.200 type vlan id 200
+ip netns exec rout2 ip link set tunelgre.200 up
+ip netns exec rout2 ip addr add 192.168.100.253/24 dev tunelgre.100
+ip netns exec rout2 ip addr add 192.168.200.253/24 dev tunelgre.200
+
+#poste1
+ip netns exec poste1 ip a del 192.168.100.1/24 dev poste1-eth0 #supprime la config initiale
+ip netns exec poste1 ip link add link poste1-eth0 name poste1-eth0.100 type vlan id 100
+ip netns exec poste1 ip link set dev poste1-eth0.100 up
+ip netns exec poste1 ip a add 192.168.100.1/24 brd 192.168.100.255 dev poste1-eth0.100
+ip netns exec poste1 ip r add default via 192.168.100.253
+
+#poste2
+ip netns exec poste2 ip a del 192.168.200.1/24 dev poste2-eth0 #supprime la config initiale
+ip netns exec poste2 ip link add link poste2-eth0 name poste2-eth0.200 type vlan id 200
+ip netns exec poste2 ip link set dev poste2-eth0.200 up
+ip netns exec poste2 ip a add 192.168.200.1/24 brd 192.168.200.255 dev poste2-eth0.200
+ip netns exec poste2 ip r add default via  192.168.200.253
+
+#poste3
+ip netns exec poste3 ip a del 192.168.100.2/24 dev poste3-eth0 #supprime la config initiale
+ip netns exec poste3 ip link add link poste3-eth0 name poste3-eth0.100 type vlan id 100
+ip netns exec poste3 ip link set dev poste3-eth0.100 up
+ip netns exec poste3 ip a add 192.168.100.2/24 brd 192.168.100.255 dev poste3-eth0.100
+ip netns exec poste3 ip r add default via 192.168.100.254
+
+#poste4
+ip netns exec poste4 ip a del 192.168.200.2/24 dev poste4-eth0 #supprime la config initiale
+ip netns exec poste4 ip link add link poste4-eth0 name poste4-eth0.200 type vlan id 200
+ip netns exec poste4 ip link set dev poste4-eth0.200 up
+ip netns exec poste4 ip a add 192.168.200.2/24 brd 192.168.200.255 dev poste4-eth0.200
+ip netns exec poste4 ip r add default via 192.168.200.254

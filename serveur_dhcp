@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#le service dhcp est activé sur le routeur 1
+#vlan100, on donne une plage de 100 adresse allant de 1 à 100
+#ip netns exec rout1 dnsmasq -d -z -i tunnel.100 -F 192.168.100.1,192.168.100.100,255.255.255.0
+#vlan200, aussi une place de 100
+#ip netns exec rout1 dnsmasq -d -z -i tunnel.200 -F 192.168.200.1,192.168.200.100,255.255.255.0
+
+#dhcp avec rout2 comme passerelle poour poste 1 et 2
+ip netns exec rout1 dnsmasq -d -z -i tunnel.100 -F 192.168.100.1,192.168.100.100,255.255.255.0 --dhcp-host=9a:bc:84:06:da:cf,set:p1 --dhcp-option=tag:p1,option:router,192.168.100.253
+#vlan200, aussi une place de 100
+ip netns exec rout1 dnsmasq -d -z -i tunnel.200 -F 192.168.200.1,192.168.200.100,255.255.255.0 --dhcp-host=6e:62:fc:81:18:5c,set:p2 --dhcp-option=tag:p2,option:router,192.168.200.253

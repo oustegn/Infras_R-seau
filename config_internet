@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#pour donner l'accès à internet, on commence par activer
+#l'interface bridge Internet de notre netns root
+ip link set Internet up
+#on attribut une adresse IP 
+ip a add dev Internet 10.87.0.100/24
+#l'adresse ci-dessus étant privée, il faut faire du snat
+iptables -t nat -A POSTROUTING -s 10.87.0.0/24 -j MASQUERADE
+#on active le routage du noyau linux de netns root
+sysctl net.ipv4.conf.all.forwarding=1
+#Ajouter ensuite les routes par défaut sur routA
+ip netns exec routA ip r add default via 10.87.0.100 dev routA-eth1
+#completer table de routage du routeur A
+ip netns exec routA ip r add 192.168.100.0/24 via 172.16.1.253 dev routA-eth0
+ip netns exec routA ip r add 192.168.200.0/24 via 172.16.1.253 dev routA-eth0
+#les règles du SNAT
+ip netns exec routA iptables -t nat -A POSTROUTING -s 172.16.1.0/24 -j MASQUERADE
+ip netns exec routA iptables -t nat -A POSTROUTING -s 192.168.100.0/24 -j MASQUERADE
+ip netns exec routA iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -j MASQUERADE
+
+#Donner accès à internet via routB aussi
+#ajout de route par defaut sur le routeur B aussi, 
+ip netns exec routB ip r add default via 10.87.0.100 dev routB-eth1
+#on complète la table du routage du routB
+ip netns exec routB ip r add 192.168.100.0/24 via 172.16.2.253 dev routB-eth0
+ip netns exec routB ip r add 192.168.200.0/24 via 172.16.2.253 dev routB-eth0
+#Les regles du SNAT
+ip netns exec routB iptables -t nat -A POSTROUTING -s 172.16.2.0/24 -j MASQUERADE
+ip netns exec routB iptables -t nat -A POSTROUTING -s 192.168.100.0/24 -j MASQUERADE
+ip netns exec routB iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -j MASQUERADE
